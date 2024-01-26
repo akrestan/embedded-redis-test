@@ -19,6 +19,7 @@ public class RedisClientApp {
         try (Jedis jedis = getJedis()) {
             String key = "dog";
             jedis.set(key, "Spot");
+            log.info("-------------- set value for key {}", key);
             log.info("-------------- found {} - {}", key, jedis.get(key));
         }
 

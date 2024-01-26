@@ -6,3 +6,4 @@ logs/
 /.gradle/
 /ignite/
 **/target/**
+.gitignore

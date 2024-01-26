@@ -1,0 +1,8 @@
+logs/
+/.idea/
+**/build/**
+**/out/
+**.*avsc
+/.gradle/
+/ignite/
+**/target/**

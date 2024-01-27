@@ -2,13 +2,10 @@
 
 Codemonstur  embedded Redis in docker container test
 
-Forked from [codemonstur](https://github.com/codemonstur/embedded-redis)
-fork from [ozimov](https://github.com/ozimov/embedded-redis),
-forked from [kstyrc](https://github.com/kstyrc/embedded-redis)
+Forked from [codemonstur](https://github.com/codemonstur/embedded-redis) (forked from [ozimov](https://github.com/ozimov/embedded-redis), (forked from [kstyrc](https://github.com/kstyrc/embedded-redis)))
 
 Maven dependency
 
-Maven Central:
 ```xml
 <dependency>
   <groupId>com.github.codemonstur</groupId>
@@ -26,16 +23,18 @@ redisServer.start();
 redisServer.stop();
 ```
 
-For the rest of the documentation see the [codemonstur](https://github.com/codemonstur/embedded-redis)
+For the rest of the documentation see the original [codemonstur](https://github.com/codemonstur/embedded-redis)
+
+## Purpose
 
 The purpose of this project is the demonstrate the problem occuring when running the above code
-in RHEL8-based image vs running in in a RHEL9-based image
+in RHEL8-based image vs running in a RHEL9-based image
 
 * The original is unchanged, only instrumented with additional logs
 * A client has been added to simulate the usage in the currently failing tests
 
 
-Steps to reproduce run these steps in the root of the project
+Steps to reproduce run these steps in the root of the project (java 17 and docker is needed)
 
 ```bash
 ./gradlew build
@@ -48,4 +47,15 @@ docker build -t eps/build-container -f  docker/Dockerfile .
 docker run -ti  --rm --name builder eps/build-container
 ```
 
+Run first as it is to see the expected output when everything works just fine, then edit the [docker/Dockerfile](docker/Dockerfile) 
+to replace RHEL9/ubi9 base image with RHEL8/ubi8
 
+```bash
+docker build -t eps/build-container -f  docker/Dockerfile .
+```
+
+```bash
+docker run -ti  --rm --name builder eps/build-container
+```
+
+You will see the error that it can be seen in the current  Betradar unifier build

@@ -1,0 +1,55 @@
+# ---- for illustration only as obtained from DevOps
+FROM czdcm-quay.lx.ifortuna.cz/build-images/ubi8:latest
+# run build trigger java17
+ARG VERSION=3.10
+ARG user=jenkins
+ARG group=jenkins
+ARG uid=1995
+ARG gid=1995
+ARG OC_VERSION=4.10.20
+ARG AGENT_WORKDIR=/home/${user}
+ENV PATH=/usr/local/git/bin:$PATH
+ADD jenkins-agent /usr/local/bin/jenkins-agent
+ADD ftn-ca.pem /etc/pki/ca-trust/source/anchors/ftn_ca.pem
+ADD ca-bundle.crt /etc/pki/ca-trust/source/anchors/ca-bundle.crt
+ADD cz_ipa_new_2.crt /etc/pki/ca-trust/source/anchors/
+ADD vault-pki-nonprod-chain.crt /etc/pki/ca-trust/source/anchors/
+ADD vault-pki-prod-chain.crt /etc/pki/ca-trust/source/anchors/
+ADD jenkins-agent /usr/local/bin/jenkins-agent
+LABEL Description="This is a base image, which allows connecting Jenkins agents via JNLP protocols" Vendor="Jenkins project" Version="$version"
+RUN set -ex &&\
+    chmod 644 /etc/pki/ca-trust/source/anchors/ca-bundle.crt &&\
+    update-ca-trust extract &&\
+    groupadd -g ${gid} ${group} &&\
+    useradd -c "Jenkins user" -d /home/${user} -u ${uid} -g ${gid} -m ${user} &&\
+    export https_proxy=http://10.0.68.20:3128 &&\
+    export http_proxy=http://10.0.68.20:3128 &&\
+    export no_proxy=nexus.svc.ifortuna.cz &&\
+    dnf install -y  --setopt=tsflags=nodocs java-17-openjdk-headless java-17-openjdk-devel java-17-openjdk shadow-utils less procps-ng tar gzip curl-devel expat-devel gettext openssl-devel zlib-devel gcc perl-ExtUtils-MakeMaker bzip2 make git git-lfs  &&\
+    curl --create-dirs -fsSLo /usr/share/jenkins/agent.jar https://nexus.svc.ifortuna.cz/repository/jenkins-repo/public/org/jenkins-ci/main/remoting/${VERSION}/remoting-${VERSION}.jar &&\
+    chmod 755 /usr/share/jenkins &&\
+    chmod 644 /usr/share/jenkins/agent.jar &&\
+    ln -sf /usr/share/jenkins/agent.jar /usr/share/jenkins/slave.jar &&\
+    mkdir -p /usr/share/occli/ &&\
+    curl -k -o /usr/share/occli/oc.tar https://nexus.svc.ifortuna.cz/repository/ocp_infra/oc-client/oc-${OC_VERSION}.tar &&\
+    tar -C /usr/share/occli/ -xvf /usr/share/occli/oc.tar &&\
+    rm -f /usr/share/occli/oc.tar &&\
+    ls -la /usr/share/occli/ &&\
+    chmod +x /usr/share/occli/oc &&\
+    ln -s /usr/share/occli/oc /usr/bin/oc &&\
+    git config --global user.email "jenkins@feg.eu" &&\
+    git config --global user.name "Jenkins" &&\
+    keytool -import -alias ftnca -keystore /usr/lib/jvm/jre/lib/security/cacerts -file /etc/pki/ca-trust/source/anchors/ca-bundle.crt -storepass changeit -trustcacerts -noprompt &&\
+    keytool -import -alias ipa_cz -keystore /usr/lib/jvm/jre/lib/security/cacerts -file /etc/pki/ca-trust/source/anchors/cz_ipa_new_2.crt -storepass changeit -trustcacerts -noprompt &&\
+    update-ca-trust &&\
+    chmod +x /usr/local/bin/jenkins-agent &&\
+    ln -s /usr/local/bin/jenkins-agent /usr/local/bin/jenkins-slave &&\
+    dnf clean all &&\
+    rm -rf /var/cache/dnf &&\
+    rm -rf /tmp/*
+USER ${user}
+#ENV AGENT_WORKDIR=${AGENT_WORKDIR}
+#RUN mkdir -p ${AGENT_WORKDIR}
+VOLUME ${AGENT_WORKDIR}
+WORKDIR /home/${user}
+ENTRYPOINT ["tail", "-f", "/dev/null"]

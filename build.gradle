@@ -49,9 +49,36 @@ tasks.withType(Javadoc) {
 }
 
 
+jar {
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    manifest {
+        attributes 'Main-Class': 'akr.redis.codemonstur.test.RedisClientApp'
+    }
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+
+}
+
 test {
     testLogging {
         events "failed"
         exceptionFormat "full"
     }
 }
+
+task copyFatJarToDockerDirectory(type: Copy) {
+    from jar
+    into "$buildDir/docker"
+    rename { fileName ->
+        "${project.name}.jar"
+    }
+}
+
+copyFatJarToDockerDirectory.dependsOn jar
+
+build.dependsOn copyFatJarToDockerDirectory
+
